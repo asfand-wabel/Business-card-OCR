@@ -1,0 +1,9 @@
+streamlit>=1.28.0
+google-cloud-vision>=3.4.0
+easyocr>=1.7.0
+opencv-python>=4.8.0
+Pillow>=10.0.0
+numpy>=1.24.0
+pyzbar>=0.1.9
+phonenumbers>=8.13.0
+python-dotenv>=1.0.0
