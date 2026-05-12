@@ -1,6 +1,6 @@
 # Business Card OCR
 
-Scan one or more business cards from a photo, extract structured contact fields, and read QR codes — built with Streamlit and Google Cloud Vision.
+Scan one or more business cards from a photo, extract structured contact fields, and read QR codes. Python backend (standard library HTTP server — no web framework) + a single `index.html` UI, powered by Google Cloud Vision.
 
 ## Features
 
@@ -29,16 +29,19 @@ A service-account JSON works too — set `GOOGLE_APPLICATION_CREDENTIALS=/path/t
 ## Run
 
 ```bash
-streamlit run app.py
+python server.py
 ```
 
-Then open http://localhost:8501, upload a business-card photo, and the extracted fields + QR data appear.
+Then open http://127.0.0.1:8000, upload a business-card photo, and the extracted fields + QR data appear.
+
+The server is plain `http.server` from the standard library — no Flask/Django/FastAPI. It serves `index.html` at `/` and exposes one JSON endpoint, `POST /scan`, which accepts the uploaded image (`multipart/form-data`, fields `image` and optional `region`) and returns the parsed cards.
 
 ## Project layout
 
 | File | Role |
 |---|---|
-| `app.py` | Streamlit UI |
+| `server.py` | Standard-library HTTP server: serves the page, runs the pipeline |
+| `index.html` | Single-file web UI (HTML + CSS + JS) |
 | `card_segmenter.py` | Splits a photo into individual card crops |
 | `ocr_engine.py` | Google Vision OCR + rotation inference |
 | `parser.py` | Field extraction, multi-contact splitting, phone normalisation |
