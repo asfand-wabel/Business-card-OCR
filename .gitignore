@@ -4,3 +4,7 @@ __pycache__/
 *.pyc
 .claude/
 .DS_Store
+
+# Parsed contact data from real cards — never commit
+queue.json
+queue.json.tmp

@@ -478,14 +478,36 @@ def parse_business_cards(text: str, default_region: Optional[str] = None) -> lis
     Parse OCR text that may contain MORE THAN ONE contact — e.g. a photo with
     two business cards, or a card listing two people.
 
-    Two splitting strategies, tried in order:
-      1. Two or more distinct email addresses → split before the name line that
-         introduces each email.
-      2. Two or more well-separated person-name lines (each followed by contact
-         info) → split at each name line. Handles cards that share one email.
-
-    Always returns a list with at least one dict.
+    Primary path: a Gemini LLM call (language-agnostic, layout-agnostic).
+    Fallback: the heuristic email/name-anchor splitter below, used only when
+    GEMINI_API_KEY isn't set or the call fails.
+    Phone numbers are always run through _normalize_number_csv afterwards.
     """
+    # Default empty result
+    if not (text or "").strip():
+        return [parse_business_card(text or "", default_region)]
+
+    # ── Primary path: LLM ────────────────────────────────────────────────────
+    import parser_ai  # noqa: PLC0415 — local import keeps optional dep optional
+    if parser_ai.is_available():
+        # RateLimitError intentionally propagates — the server turns it into a
+        # 429 with retry-after so the UI can tell the user how long to wait.
+        ai_contacts = parser_ai.extract(text)
+        if ai_contacts:
+            out = []
+            for c in ai_contacts:
+                full = {k: c.get(k) for k in (
+                    "name", "company", "job_title", "email", "phone",
+                    "mobile", "fax", "website", "linkedin", "twitter", "address",
+                )}
+                for k in ("phone", "mobile", "fax"):
+                    full[k] = _normalize_number_csv(full.get(k), default_region)
+                out.append(full)
+            return out
+        # extract() returned None — non-rate-limit failure. Fall through to
+        # the heuristic so the user still gets something rather than nothing.
+
+    # ── Fallback: original heuristic splitter ────────────────────────────────
     lines = [l.strip() for l in text.split("\n") if l.strip()]
     if not lines:
         return [parse_business_card(text, default_region)]

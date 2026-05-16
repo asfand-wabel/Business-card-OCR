@@ -3,262 +3,562 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Business Card Scanner</title>
+<title>Business Cards → Zoho Review Queue</title>
 <style>
   :root {
-    --bg: #f4f6fa;
+    --bg: #f4f6fb;
     --panel: #ffffff;
-    --ink: #1a1a2e;
+    --ink: #11142b;
     --muted: #6b7280;
-    --accent: #4a90e2;
-    --accent-dark: #2f6fb8;
+    --accent: #5a4dee;
+    --accent-dark: #3a2dc9;
+    --green: #1e7e34;
+    --amber: #b8861b;
+    --red: #b3261e;
     --border: #e3e7ee;
-    --qr-bg: #fff8e7;
-    --qr-border: #f0c040;
+    --row-border: #ebeef4;
   }
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
     background: var(--bg);
     color: var(--ink);
-    line-height: 1.5;
+    line-height: 1.45;
   }
-  header {
-    background: linear-gradient(135deg, #1a1a2e, #2f3b5c);
-    color: #fff;
-    padding: 1.6rem 1.5rem;
-  }
-  header h1 { margin: 0; font-size: 1.5rem; }
-  header p { margin: .35rem 0 0; color: #c7d0e6; font-size: .92rem; }
-  main { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
-
-  .controls {
+  .topbar {
     background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 1.2rem 1.3rem;
+    border-bottom: 1px solid var(--border);
+    padding: 1.1rem 1.5rem;
     display: flex;
+    align-items: center;
+    justify-content: space-between;
     flex-wrap: wrap;
-    gap: 1rem;
-    align-items: flex-end;
+    gap: .75rem;
   }
-  .controls .field { display: flex; flex-direction: column; gap: .35rem; }
-  .controls label { font-size: .75rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
-  .controls input[type=file] {
-    padding: .5rem; border: 1px dashed #c3ccdb; border-radius: 8px; background: #fafbfd; min-width: 280px;
+  .topbar h1 {
+    margin: 0;
+    font-size: 1.35rem;
+    display: flex;
+    align-items: center;
+    gap: .55rem;
   }
-  .controls select {
-    padding: .55rem .6rem; border: 1px solid #c3ccdb; border-radius: 8px; background: #fff; font-size: .9rem; min-width: 240px;
-  }
-  button.primary {
-    background: var(--accent); color: #fff; border: none; border-radius: 8px;
-    padding: .65rem 1.4rem; font-size: .95rem; font-weight: 600; cursor: pointer;
-  }
-  button.primary:hover { background: var(--accent-dark); }
-  button.primary:disabled { opacity: .55; cursor: default; }
-
-  #status { margin: 1.1rem 0 0; font-size: .92rem; min-height: 1.2rem; }
-  #status.error { color: #b3261e; }
-  #status.busy { color: var(--muted); }
-
-  .card-block {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 1.3rem;
-    margin-top: 1.4rem;
-    box-shadow: 0 1px 3px rgba(20,20,40,.04);
-  }
-  .card-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
-  .card-head h2 { font-size: 1.15rem; margin: 0; }
+  .topbar h1 .accent { color: var(--accent); }
   .badge {
-    display: inline-block; background: #e6f4ea; color: #1e7e34; border-radius: 20px;
-    padding: 2px 11px; font-size: .74rem; font-weight: 600;
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 14px;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .03em;
   }
-  .card-grid { display: grid; grid-template-columns: minmax(220px, 320px) 1fr; gap: 1.4rem; align-items: start; }
-  @media (max-width: 760px) { .card-grid { grid-template-columns: 1fr; } }
-  .preview img { width: 100%; border-radius: 10px; border: 1px solid var(--border); }
+  .badge.count       { background: var(--accent); color: #fff; }
+  .badge.sandbox     { background: #1bc3d2; color: #fff; }
+  .badge.production  { background: var(--red); color: #fff; }
+  .badge.dryrun      { background: #232744; color: #fff; }
+  .badge.crm-off     { background: #fde7e7; color: var(--red); }
+  .topbar .actions { display: flex; gap: .55rem; }
+  .topbar button, .topbar label.button {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: .5rem .9rem;
+    font-size: .88rem;
+    cursor: pointer;
+  }
+  .topbar button:hover { background: #f4f6fb; }
+  .topbar label.button { display: inline-block; }
+  .topbar label.button input { display: none; }
+  .topbar button.primary {
+    background: var(--accent); color: #fff; border-color: var(--accent);
+  }
+  .topbar button.primary:hover { background: var(--accent-dark); }
 
-  .contact { margin-bottom: 1rem; }
-  .contact + .contact { border-top: 1px dashed var(--border); padding-top: 1rem; }
-  .contact-tag {
-    display: inline-block; background: #e8f0fe; color: #1a73e8; border-radius: 20px;
-    padding: 2px 11px; font-size: .76rem; font-weight: 600; margin-bottom: .6rem;
+  main { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+  .tabs {
+    display: flex; gap: .75rem; flex-wrap: wrap;
+    margin-bottom: 1rem;
   }
-  .field {
-    background: #f8f9fc; border-left: 4px solid var(--accent); border-radius: 6px;
-    padding: .5rem .85rem; margin-bottom: .5rem;
+  .tab {
+    background: #fff; border: 1px solid var(--border); border-radius: 999px;
+    padding: .5rem 1rem; font-size: .9rem; cursor: pointer; font-weight: 500;
+    display: inline-flex; align-items: center; gap: .35rem;
   }
-  .field .k { font-size: .68rem; font-weight: 700; color: #8b93a3; text-transform: uppercase; letter-spacing: .05em; }
-  .field .v { font-size: .98rem; color: var(--ink); word-break: break-word; }
-  .field .v.name { font-size: 1.25rem; font-weight: 700; }
-  .field .v a { color: var(--accent-dark); }
-  .empty { color: var(--muted); font-style: italic; font-size: .9rem; }
+  .tab .n {
+    background: #e7eaf2; color: var(--muted);
+    border-radius: 12px; padding: 1px 8px; font-size: .76rem; font-weight: 700;
+  }
+  .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .tab.active .n { background: rgba(255,255,255,.25); color: #fff; }
 
-  .qr-section {
-    margin-top: 1.1rem; background: var(--qr-bg); border: 1px solid var(--qr-border);
-    border-radius: 10px; padding: 1rem 1.1rem;
+  .filterbar {
+    display: flex; gap: .6rem; align-items: center; margin-bottom: 1.1rem;
   }
-  .qr-section h3 { margin: 0 0 .7rem; font-size: 1rem; }
-  .qr-item { display: flex; gap: 1rem; align-items: flex-start; }
-  .qr-item + .qr-item { margin-top: .8rem; border-top: 1px dashed var(--qr-border); padding-top: .8rem; }
-  .qr-item img { width: 120px; border-radius: 8px; border: 1px solid var(--qr-border); background:#fff; }
-  .qr-item .qr-data { font-size: .92rem; word-break: break-all; }
-  .qr-item .qr-type { font-size: .72rem; font-weight: 700; color: #9a7b1e; text-transform: uppercase; }
+  .filterbar select, .filterbar input {
+    background: #fff; border: 1px solid var(--border); border-radius: 8px;
+    padding: .45rem .7rem; font-size: .9rem;
+  }
+  .filterbar input { flex: 1; min-width: 200px; }
 
-  details.raw { margin-top: 1rem; }
-  details.raw summary { cursor: pointer; font-size: .85rem; color: var(--muted); }
-  details.raw pre {
-    background: #1e2230; color: #d6dbe6; padding: .8rem 1rem; border-radius: 8px;
-    overflow-x: auto; font-size: .82rem; white-space: pre-wrap;
+  .item {
+    background: var(--panel); border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px; margin-bottom: 1.1rem; padding: 1.1rem 1.2rem;
+    box-shadow: 0 1px 2px rgba(20,20,40,.03);
   }
+  .item.approved { border-left-color: var(--green); opacity: .85; }
+  .item.deleted  { display: none; }
+
+  .item-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 1rem; margin-bottom: .15rem;
+  }
+  .item-title { font-size: 1.05rem; font-weight: 700; margin: 0; }
+  .item-pills { display: flex; gap: .4rem; }
+  .pill {
+    display: inline-block; padding: 2px 10px; border-radius: 12px;
+    font-size: .72rem; font-weight: 700; letter-spacing: .03em;
+  }
+  .pill.ai          { background: #eee9ff; color: #5a4dee; }
+  .pill.new-pot     { background: #f1efff; color: #5a4dee; }
+  .pill.pending     { background: #fff5d9; color: #946200; }
+  .pill.approved    { background: #e6f4ea; color: var(--green); }
+  .pill.rate-err    { background: #fde7e7; color: var(--red); }
+  .item-sub { color: var(--muted); font-size: .82rem; margin: 0 0 .7rem; }
+  .item-sub b { color: #4b5160; font-weight: 600; }
+
+  .raw {
+    background: #f8f9fc; border: 1px solid var(--row-border); border-radius: 8px;
+    padding: .55rem .8rem; font-family: ui-monospace, Menlo, monospace;
+    font-size: .82rem; white-space: pre-wrap; max-height: 8.6em; overflow: hidden;
+    color: #2a2f44; margin-bottom: .9rem;
+    transition: max-height .25s ease;
+  }
+  .raw.expanded { max-height: 60em; overflow: auto; }
+  .raw-toggle {
+    display: inline-block; font-size: .78rem; color: var(--accent);
+    cursor: pointer; margin: -.3rem 0 .9rem; user-select: none;
+  }
+
+  .status-row {
+    background: #fff7e0; border: 1px solid #f1c97a; border-radius: 8px;
+    padding: .55rem .85rem; margin-bottom: .9rem; font-size: .87rem;
+    display: flex; gap: .8rem; flex-wrap: wrap; align-items: center;
+  }
+  .status-row.ok { background: #eaf6ed; border-color: #b3d9bb; }
+  .status-tag {
+    background: #f5b740; color: #2a1d00; font-weight: 700; font-size: .7rem;
+    padding: 2px 7px; border-radius: 6px; letter-spacing: .04em;
+  }
+  .status-tag.ok { background: #88c596; color: #0f3a16; }
+  .status-row b { color: #2a1d00; font-weight: 700; }
+
+  .summary { display: flex; gap: 1.2rem; flex-wrap: wrap; font-size: .9rem; margin-bottom: 1rem; }
+  .summary span b { color: var(--muted); font-weight: 600; }
+
+  .choices {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .55rem .9rem;
+    margin-bottom: 1rem;
+  }
+  .choices .full { grid-column: 1 / -1; }
+  @media (max-width: 700px) { .choices { grid-template-columns: 1fr; } }
+  .choices label {
+    display: block; font-size: .7rem; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .04em; margin-bottom: 3px;
+  }
+  .choices select, .choices input {
+    width: 100%; padding: .42rem .55rem; border: 1px solid #c3ccdb;
+    border-radius: 6px; background: #fff; font-size: .9rem;
+  }
+  .choices .required label::after { content: " *"; color: var(--red); }
+
+  .actions { display: flex; gap: .6rem; align-items: center; }
+  .actions button {
+    border: 1px solid var(--border); background: #fff;
+    border-radius: 8px; padding: .55rem 1.1rem; font-size: .9rem;
+    font-weight: 600; cursor: pointer;
+  }
+  .actions button.approve { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .actions button.approve:hover { background: var(--accent-dark); }
+  .actions button.delete { color: var(--red); border-color: #f3c3c0; }
+  .actions button.delete:hover { background: #fdf2f2; }
+  .actions button:disabled { opacity: .55; cursor: default; }
+  .feedback { font-size: .88rem; }
+  .feedback.ok { color: var(--green); }
+  .feedback.err { color: var(--red); }
+
+  .empty {
+    background: #fff; border: 1px dashed var(--border); border-radius: 10px;
+    padding: 2.5rem; text-align: center; color: var(--muted);
+  }
+
+  #status { margin: -0.4rem 0 .9rem; font-size: .9rem; min-height: 1.2em; }
+  #status.busy { color: var(--muted); }
+  #status.err  { color: var(--red); }
 </style>
 </head>
 <body>
-<header>
-  <h1>Business Card Scanner</h1>
-  <p>Upload a photo with one or more business cards — fields, phone numbers and QR codes are extracted automatically.</p>
+<header class="topbar">
+  <h1>
+    Business Cards <span class="accent">→</span> Zoho Review Queue
+    <span class="badge count" id="countBadge">0</span>
+    <span class="badge sandbox" id="envBadge">SANDBOX</span>
+    <span class="badge crm-off" id="crmOffBadge" style="display:none">CRM OFF</span>
+  </h1>
+  <div class="actions">
+    <label class="button">
+      Upload card(s)
+      <input type="file" id="filesInput" accept="image/*" multiple>
+    </label>
+    <button id="refreshBtn" type="button">↻ Refresh</button>
+    <button id="clearBtn" type="button" title="Wipe the queue">Clear queue</button>
+  </div>
 </header>
 
 <main>
-  <form id="scanForm" class="controls">
-    <div class="field">
-      <label for="imageInput">Business card image</label>
-      <input type="file" id="imageInput" name="image" accept="image/*" required />
-    </div>
-    <button type="submit" class="primary" id="submitBtn">Scan</button>
-  </form>
-
+  <div class="tabs">
+    <div class="tab active" data-tab="all">All <span class="n" data-c="all">0</span></div>
+    <div class="tab" data-tab="pending">Pending <span class="n" data-c="pending">0</span></div>
+    <div class="tab" data-tab="approved">Approved <span class="n" data-c="approved">0</span></div>
+  </div>
+  <div class="filterbar">
+    <input id="search" placeholder="Search company, contact, email…">
+  </div>
   <div id="status"></div>
-  <div id="results"></div>
+  <div id="queue"></div>
 </main>
 
 <script>
 const FIELDS = [
-  ["name",      "Name",         true],
-  ["company",   "Company",      false],
-  ["job_title", "Job Title",    false],
-  ["email",     "Email",        false],
-  ["phone",     "Phone",        false],
-  ["mobile",    "Mobile",       false],
-  ["fax",       "Fax",          false],
-  ["website",   "Website",      false],
-  ["linkedin",  "LinkedIn",     false],
-  ["twitter",   "Twitter / X",  false],
-  ["address",   "Address",      false],
+  ["name",      "Name"],
+  ["company",   "Company"],
+  ["job_title", "Job Title"],
+  ["email",     "Email"],
+  ["phone",     "Phone"],
+  ["mobile",    "Mobile"],
+  ["fax",       "Fax"],
+  ["website",   "Website"],
+  ["linkedin",  "LinkedIn"],
+  ["twitter",   "Twitter / X"],
+  ["address",   "Address"],
 ];
 
-const form = document.getElementById("scanForm");
-const statusEl = document.getElementById("status");
-const resultsEl = document.getElementById("results");
-const submitBtn = document.getElementById("submitBtn");
+let CRM_OPTIONS = null;
+let CRM_ENABLED = false;
+let CURRENT_TAB = "all";
+let CURRENT_SEARCH = "";
+let _retryHandle = null;
+
+const $ = (sel, root=document) => root.querySelector(sel);
+const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
 
 function esc(s) {
   return String(s == null ? "" : s)
-    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+function fmtTime(iso) {
+  if (!iso) return "";
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString();
+  } catch { return iso; }
 }
 
-function linkify(key, value) {
-  const v = esc(value);
-  if (key === "email")    return `<a href="mailto:${v}">${v}</a>`;
-  if (key === "website")  {
-    const href = /^https?:\/\//i.test(value) ? value : "https://" + value;
-    return `<a href="${esc(href)}" target="_blank" rel="noopener">${v}</a>`;
+async function loadOptions() {
+  try {
+    const h = await (await fetch("/health")).json();
+    CRM_ENABLED = !!h.crm_enabled;
+    $("#crmOffBadge").style.display = CRM_ENABLED ? "none" : "inline-block";
+    // Reflect the real environment in the badge — green SANDBOX vs red PRODUCTION
+    const envBadge = $("#envBadge");
+    const env = h.crm_environment || "SANDBOX";
+    envBadge.textContent = env;
+    envBadge.className = "badge " + (env === "SANDBOX" ? "sandbox" : "production");
+    envBadge.title = h.crm_api_base || "";
+    if (!CRM_ENABLED) return;
+    const r = await fetch("/crm/options");
+    if (r.ok) CRM_OPTIONS = await r.json();
+  } catch (e) { /* ignore */ }
+}
+
+function pickOptions(values, selected) {
+  return (values || []).map(v =>
+    `<option value="${esc(v)}"${v===selected ? " selected":""}>${esc(v)}</option>`
+  ).join("");
+}
+
+function linkify(k, v) {
+  const ev = esc(v);
+  if (!v) return ev;
+  if (k === "email") return `<a href="mailto:${ev}">${ev}</a>`;
+  if (k === "website" || k === "linkedin") {
+    const href = /^https?:\/\//i.test(v) ? v : "https://" + v;
+    return `<a href="${esc(href)}" target="_blank" rel="noopener">${ev}</a>`;
   }
-  if (key === "linkedin") {
-    const href = /^https?:\/\//i.test(value) ? value : "https://" + value;
-    return `<a href="${esc(href)}" target="_blank" rel="noopener">${v}</a>`;
+  return ev;
+}
+
+function statusRow(item) {
+  if (!CRM_ENABLED) {
+    return `<div class="status-row"><span class="status-tag">CRM</span>
+      <b>Zoho not configured</b> — set ZOHO_* env vars to enable push.</div>`;
   }
-  return v;
-}
-
-function renderContact(c, index, total) {
-  const rows = FIELDS
-    .filter(([k]) => c[k])
-    .map(([k, label, isName]) =>
-      `<div class="field"><div class="k">${esc(label)}</div>
-       <div class="v ${isName ? "name" : ""}">${linkify(k, c[k])}</div></div>`)
-    .join("");
-  const tag = total > 1
-    ? `<div class="contact-tag">Contact ${index + 1}${c.name ? " — " + esc(c.name) : ""}</div>`
-    : "";
-  const body = rows || `<div class="empty">No structured fields found — see raw text below.</div>`;
-  return `<div class="contact">${tag}${body}</div>`;
-}
-
-function renderQr(qr, n) {
-  const img = qr.crop
-    ? `<img src="${qr.crop}" alt="QR code ${n}">`
-    : `<div class="empty">QR image unavailable</div>`;
-  const isUrl = /^https?:\/\//i.test(qr.data);
-  const data = isUrl
-    ? `<a href="${esc(qr.data)}" target="_blank" rel="noopener">${esc(qr.data)}</a>`
-    : esc(qr.data);
-  return `<div class="qr-item">${img}
-    <div><div class="qr-type">${esc(qr.type || "QR")}</div><div class="qr-data">${data}</div></div></div>`;
-}
-
-function renderCard(card, i, totalCards) {
-  const title = totalCards > 1 ? esc(card.label || ("Card " + (i + 1))) : "Card";
-  const rotBadge = card.rotation ? `<span class="badge">↻ rotated ${card.rotation}°</span>` : "";
-  const contactsHtml = (card.contacts || []).map((c, idx) =>
-    renderContact(c, idx, card.contacts.length)).join("");
-  const heading = (card.contacts && card.contacts.length > 1)
-    ? `Extracted Information — ${card.contacts.length} contacts`
-    : "Extracted Information";
-  const qrHtml = (card.qr_codes && card.qr_codes.length)
-    ? `<div class="qr-section"><h3>QR Code${card.qr_codes.length > 1 ? "s" : ""} (${card.qr_codes.length})</h3>
-       ${card.qr_codes.map((q, n) => renderQr(q, n + 1)).join("")}</div>`
-    : `<div class="qr-section" style="background:#f6f7f9;border-color:var(--border);color:var(--muted)">No QR code detected on this card.</div>`;
-  const raw = `<details class="raw"><summary>Raw OCR text</summary><pre>${esc(card.raw_text || "(no text detected)")}</pre></details>`;
-
-  return `<div class="card-block">
-    <div class="card-head"><h2>${title}</h2>${rotBadge}</div>
-    <div class="card-grid">
-      <div class="preview">${card.preview ? `<img src="${card.preview}" alt="card preview">` : ""}</div>
-      <div><h3 style="margin-top:0">${heading}</h3>${contactsHtml}${qrHtml}${raw}</div>
-    </div>
+  const crm = item.crm || {};
+  if (crm.error) {
+    return `<div class="status-row"><span class="status-tag" style="background:#e88">!</span>
+      <b>CRM lookup failed:</b> ${esc(crm.error)}</div>`;
+  }
+  const compNew = crm.company_status === "new";
+  const contNew = crm.contact_status === "new";
+  const compTxt = compNew
+    ? `Not in Zoho — new account will be created`
+    : `Account exists in Zoho`;
+  const contTxt = contNew
+    ? `New contact will be created`
+    : `Contact exists in Zoho`;
+  const mismatch = (!compNew && !contNew && crm.contact_existing_account_id
+                    && crm.contact_existing_account_id !== crm.account_id);
+  const rowClass = (compNew || contNew || mismatch) ? "" : "ok";
+  return `<div class="status-row ${rowClass}">
+    <span class="status-tag ${compNew ? "" : "ok"}">${compNew ? "NEW" : "OK"}</span>
+    <b>${esc(compTxt)}</b>
+    <span class="status-tag ${contNew ? "" : "ok"}">${contNew ? "NEW" : "OK"}</span>
+    <b>${esc(contTxt)}</b>
+    ${mismatch ? `<span class="status-tag" style="background:#e88">!</span>
+      <b>Contact already on a different account (“${esc(crm.contact_existing_account_name||"")}”)</b>` : ""}
   </div>`;
 }
 
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const fileInput = document.getElementById("imageInput");
-  if (!fileInput.files.length) return;
+function summaryLine(item) {
+  const f = item.fields || {};
+  const bits = [];
+  if (f.company)  bits.push(`<span><b>Company:</b> ${esc(f.company)}</span>`);
+  if (f.name)     bits.push(`<span><b>Contact:</b> ${esc(f.name)}${f.job_title ? " ("+esc(f.job_title)+")":""}</span>`);
+  if (f.email)    bits.push(`<span><b>Email:</b> ${linkify("email", f.email)}</span>`);
+  const ph = f.phone || f.mobile;
+  if (ph)         bits.push(`<span><b>Phone:</b> ${esc(ph)}</span>`);
+  return `<div class="summary">${bits.join("")}</div>`;
+}
 
-  resultsEl.innerHTML = "";
-  statusEl.className = "busy";
-  statusEl.textContent = "Detecting cards, running OCR and QR scan…";
-  submitBtn.disabled = true;
+function choicesForm(item) {
+  if (!CRM_ENABLED) return "";
+  const o = CRM_OPTIONS || {};
+  const userOpts = `<option value="">— pick owner —</option>` +
+    (o.users || []).map(u => `<option value="${esc(u.id)}">${esc(u.name)} — ${esc(u.email)}</option>`).join("");
+  return `<div class="choices">
+    <div class="required"><label>Stage</label>
+      <select data-k="stage"><option value="">— pick —</option>${pickOptions(o.stage)}</select></div>
+    <div class="required"><label>Pipeline</label>
+      <select data-k="pipeline"><option value="">— pick —</option>${pickOptions(o.pipeline)}</select></div>
+    <div><label>Potential Target</label>
+      <select data-k="potential_target"><option value="">— none —</option>${pickOptions(o.potential_target)}</select></div>
+    <div><label>Potential Type (Summit)</label>
+      <select data-k="potential_type"><option value="">— none —</option>${pickOptions(o.potential_type)}</select></div>
+    <div><label>Met By Consultant At</label>
+      <select data-k="met_by_consultant_at"><option value="">— none —</option>${pickOptions(o.met_by_consultant_at)}</select></div>
+    <div><label>Lead Source</label>
+      <select data-k="lead_source"><option value="">— none —</option>${pickOptions(o.lead_source, "Trade Show")}</select></div>
+    <div class="full"><label>Owner</label>${`<select data-k="owner_id">${userOpts}</select>`}</div>
+    <div class="full"><label>Deal name (blank = "&lt;Account&gt; - &lt;Summit&gt;")</label>
+      <input type="text" data-k="deal_name" placeholder="auto-generated"></div>
+  </div>`;
+}
 
-  try {
-    const fd = new FormData(form);
-    const res = await fetch("/scan", { method: "POST", body: fd });
-    const data = await res.json();
-    if (!res.ok || data.error) {
-      statusEl.className = "error";
-      statusEl.textContent = data.error || ("Server error (" + res.status + ")");
-      return;
+function renderItem(item) {
+  const f = item.fields || {};
+  const title = f.company || f.name || (item.source || "Card");
+  const sourceLine = `${esc(item.source || "upload")} · ${esc(fmtTime(item.created_at))}`;
+  const pills = [
+    `<span class="pill ai">AI</span>`,
+    `<span class="pill new-pot">New Potential</span>`,
+    item.status === "approved"
+      ? `<span class="pill approved">approved</span>`
+      : `<span class="pill pending">pending</span>`,
+  ].join("");
+  const raw = item.raw_text || "(no OCR text)";
+  const approvedFooter = (item.status === "approved" && item.push_result)
+    ? `<div class="feedback ok" style="margin-top:.4rem">✓ Pushed —
+        Potential <a href="${esc(item.push_result.deal_url)}" target="_blank" rel="noopener">${esc(item.push_result.deal_name||"open ↗")}</a>.
+        Account ${item.push_result.account_created?"created":"reused"}, Contact ${item.push_result.contact_created?"created":"reused"}.
+       </div>` : "";
+  return `<div class="item ${item.status||"pending"}" data-id="${esc(item.id)}">
+    <div class="item-head">
+      <h3 class="item-title">${esc(title)}</h3>
+      <div class="item-pills">${pills}</div>
+    </div>
+    <p class="item-sub">${sourceLine}</p>
+    <div class="raw" data-role="raw">${esc(raw)}</div>
+    <div class="raw-toggle" data-role="raw-toggle">show full OCR</div>
+
+    ${statusRow(item)}
+    ${summaryLine(item)}
+    ${item.status === "approved" ? "" : choicesForm(item)}
+
+    <div class="actions">
+      ${item.status === "approved"
+        ? `<button type="button" data-action="delete">Remove from queue</button>`
+        : `<button class="approve" type="button" data-action="approve">Review & approve</button>
+           <button class="delete" type="button" data-action="delete">Delete</button>`}
+      <span class="feedback" data-role="feedback"></span>
+    </div>
+    ${approvedFooter}
+  </div>`;
+}
+
+function filtered(items) {
+  const q = CURRENT_SEARCH.trim().toLowerCase();
+  return items.filter(it => {
+    if (CURRENT_TAB === "pending"  && it.status !== "pending")  return false;
+    if (CURRENT_TAB === "approved" && it.status !== "approved") return false;
+    if (!q) return true;
+    const f = it.fields || {};
+    return [f.company, f.name, f.email, f.phone, f.mobile, it.source]
+      .some(v => v && String(v).toLowerCase().includes(q));
+  });
+}
+
+async function loadQueue() {
+  const r = await fetch("/queue");
+  const data = await r.json();
+  CRM_ENABLED = !!data.crm_enabled;
+  $("#crmOffBadge").style.display = CRM_ENABLED ? "none" : "inline-block";
+  const items = (data.items || []).slice().reverse(); // newest on top
+  const counts = data.counts || {};
+  $$('[data-c]').forEach(el => el.textContent = counts[el.getAttribute("data-c")] || 0);
+  $("#countBadge").textContent = counts.pending || 0;
+
+  const view = filtered(items);
+  const root = $("#queue");
+  if (!view.length) {
+    root.innerHTML = `<div class="empty">Nothing here yet — use “Upload card(s)” to add cards.</div>`;
+    return;
+  }
+  root.innerHTML = view.map(renderItem).join("");
+}
+
+document.addEventListener("click", async (e) => {
+  // Tabs
+  const tab = e.target.closest(".tab");
+  if (tab) {
+    $$(".tab").forEach(t => t.classList.toggle("active", t === tab));
+    CURRENT_TAB = tab.getAttribute("data-tab");
+    loadQueue(); return;
+  }
+  // Show full OCR
+  if (e.target.matches('[data-role="raw-toggle"]')) {
+    const raw = e.target.previousElementSibling;
+    raw.classList.toggle("expanded");
+    e.target.textContent = raw.classList.contains("expanded") ? "hide OCR" : "show full OCR";
+    return;
+  }
+  // Action buttons
+  const btn = e.target.closest("[data-action]");
+  if (!btn) return;
+  const item = btn.closest(".item");
+  const id = item.getAttribute("data-id");
+  const action = btn.getAttribute("data-action");
+  const fb = item.querySelector('[data-role="feedback"]');
+
+  if (action === "delete") {
+    btn.disabled = true; fb.className = "feedback"; fb.textContent = "Deleting…";
+    const r = await fetch("/queue/delete", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({id}),
+    });
+    if (r.ok) loadQueue();
+    else { fb.className = "feedback err"; fb.textContent = "Delete failed."; btn.disabled = false; }
+    return;
+  }
+
+  if (action === "approve") {
+    const choices = {};
+    item.querySelectorAll("[data-k]").forEach(el => {
+      const v = (el.value || "").trim();
+      if (v) choices[el.getAttribute("data-k")] = v;
+    });
+    if (!choices.stage || !choices.pipeline) {
+      fb.className = "feedback err"; fb.textContent = "Stage and Pipeline are required."; return;
     }
-    const cards = data.cards || [];
-    if (!cards.length) {
-      statusEl.className = "error";
-      statusEl.textContent = "No cards could be processed from that image.";
-      return;
+    btn.disabled = true; fb.className = "feedback"; fb.textContent = "Pushing to Zoho…";
+    const r = await fetch("/crm/push", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({id, choices}),
+    });
+    const j = await r.json();
+    if (!r.ok || !j.ok) {
+      fb.className = "feedback err";
+      fb.textContent = "Push failed: " + (j.error || ("HTTP " + r.status));
+      btn.disabled = false; return;
     }
-    statusEl.className = "";
-    statusEl.textContent = cards.length === 1
-      ? "Done." : `${cards.length} card regions detected.`;
-    resultsEl.innerHTML = cards.map((c, i) => renderCard(c, i, cards.length)).join("");
-  } catch (err) {
-    statusEl.className = "error";
-    statusEl.textContent = "Request failed: " + err;
-  } finally {
-    submitBtn.disabled = false;
+    loadQueue();
   }
 });
+
+$("#refreshBtn").addEventListener("click", () => loadQueue());
+$("#clearBtn").addEventListener("click", async () => {
+  if (!confirm("Wipe ALL queue items?")) return;
+  await fetch("/queue/clear", {method: "POST"});
+  loadQueue();
+});
+$("#search").addEventListener("input", (e) => {
+  CURRENT_SEARCH = e.target.value;
+  loadQueue();
+});
+
+function showRetryBanner(seconds, kind) {
+  if (_retryHandle) clearInterval(_retryHandle);
+  const st = $("#status");
+  if (kind === "day") {
+    st.className = "err";
+    st.innerHTML = "AI parser <b>daily quota</b> reached on the free tier. " +
+      "Resets at midnight Pacific. To remove the limit immediately, enable paid mode at " +
+      `<a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com</a>.`;
+    return;
+  }
+  let left = Math.max(1, Math.ceil(seconds));
+  const tick = () => {
+    st.className = "err";
+    st.textContent = `AI parser rate-limited. Please wait ${left}s, then upload again.`;
+    if (--left < 0) {
+      clearInterval(_retryHandle); _retryHandle = null;
+      st.className = ""; st.textContent = "";
+    }
+  };
+  tick();
+  _retryHandle = setInterval(tick, 1000);
+}
+
+$("#filesInput").addEventListener("change", async (e) => {
+  if (!e.target.files.length) return;
+  $("#status").className = "busy";
+  $("#status").textContent = `Uploading ${e.target.files.length} file(s)…`;
+  const fd = new FormData();
+  for (const f of e.target.files) fd.append("image", f);
+  try {
+    const r = await fetch("/scan", { method: "POST", body: fd });
+    const j = await r.json();
+    if (r.status === 429 && j.retry_after_seconds) {
+      showRetryBanner(j.retry_after_seconds, j.limit_kind);
+    } else if (!r.ok || j.error) {
+      $("#status").className = "err";
+      $("#status").textContent = j.error || "Upload failed.";
+    } else {
+      $("#status").className = "";
+      const errs = (j.errors || []).length;
+      $("#status").textContent = `Added ${j.added} item(s).` + (errs ? ` ${errs} failed.`:"");
+    }
+  } catch (err) {
+    $("#status").className = "err"; $("#status").textContent = "Network error: " + err;
+  }
+  e.target.value = "";
+  loadQueue();
+});
+
+(async () => {
+  await loadOptions();
+  await loadQueue();
+})();
 </script>
 </body>
 </html>
